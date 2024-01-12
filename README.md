@@ -1,2 +1,2 @@
 # traefik-py
-async wrapper for traefik api
+Simple async wrapper for the traefik API
