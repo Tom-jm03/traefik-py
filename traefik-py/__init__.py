@@ -24,15 +24,25 @@ from typing import (
 
 
 class ResponseObject:
-    def __init__(self, dictionary):
+    def __init__(self, data):
         """
         Initializes a ResponseObject.
 
         Args:
-            dictionary (dict): The dictionary to initialize the ResponseObject with.
+            data (Union[dict, list]): The data to initialize the ResponseObject with.
         """
-        for key, value in dictionary.items():
-            setattr(self, key, value)
+
+        if isinstance(data, dict):
+            for key, value in data.items():
+                setattr(self, key, value)
+        elif isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    for key, value in item.items():
+                        if hasattr(self, key):
+                            getattr(self, key).append(value)
+                        else:
+                            setattr(self, key, [value])
 
     def __str__(self):
         """
@@ -112,6 +122,24 @@ class TraefikClient(aiohttp.ClientSession):
                 return ResponseObject(await resp.json())
             else:
                 raise ValueError('Response is not in JSON format')
+    
+    @property
+    async def routers(self) -> ResponseObject:
+        """
+        Gets the http routers from the Traefik API. 
+
+        Returns:
+            ResponseObject: The http routers as a ResponseObject.
+        """
+
+        async with self.get(f'{await self.base_url}/api/http/routers', auth=await self.auth) as resp:
+            print(resp.content)
+            print(resp.headers)
+            if resp.headers['Content-Type'] == 'application/json':
+                print(await resp.json())
+                return ResponseObject(await resp.json())
+            else:
+                raise ValueError('Response is not in JSON format')
 
     async def close(self) -> None:
         """
@@ -121,5 +149,3 @@ class TraefikClient(aiohttp.ClientSession):
             None
         """
         await super().close()
-
-    
